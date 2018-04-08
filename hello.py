@@ -1,8 +1,9 @@
 from datetime import datetime
 
 from flask import Flask
-from flask import request, current_app
-from flask import make_response, redirect, abort, render_template
+from flask import request, current_app, session
+from flask import make_response, url_for, flash
+from flask import redirect, abort, render_template
 
 from flask_script import Manager
 from flask_bootstrap import Bootstrap
@@ -23,16 +24,19 @@ class NameForm(Form):
     submit = SubmitField('Submit')
 
 
+# Post 重定向 Get 模式
 @app.route('/', methods=['GET', 'POST'])
-def index():
-    name = None
+def hello():
     form = NameForm()
     if form.validate_on_submit():
-        name = form.name.data
-        form.name.data = ''
+        old_name = session.get('name')
+        if old_name and old_name != form.name.data:
+            flash('Looks like you have changed your name!')
+        session['name'] = form.name.data
+        return redirect(url_for('hello'))
     params = {
         'form': form,
-        'name': name,
+        'name': session.get('name'),
         'current_time': datetime.utcnow()
     }
     return render_template('index.html', **params)
@@ -59,6 +63,7 @@ def get_ua():
     return '<p>your browser is %s</p>' % ua
 
 
+# 程序上下文current_app
 @app.route('/crtapp/')
 def crtapp():
     return 'current_app is %s' % current_app.name
